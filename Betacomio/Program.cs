@@ -1,4 +1,9 @@
 
+
+using Betacomio.Models;
+
+using Microsoft.EntityFrameworkCore;
+
 namespace Betacomio
 {
     public class Program
@@ -14,6 +19,8 @@ namespace Betacomio
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            builder.Services.AddDbContext<AdventureWorksLt2019Context>(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("MainDB")));
+            builder.Services.AddDbContext<AdventureLoginContext>(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("LoginDB")));
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
