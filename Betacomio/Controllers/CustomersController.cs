@@ -22,14 +22,53 @@ namespace Betacomio.Controllers
         }
 
         // GET: api/Customers
+        [Route("GetCustomers")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Customer>>> GetCustomers()
         {
           if (_context.Customers == null)
           {
               return NotFound();
-          }
+          } 
+       
             return await _context.Customers.ToListAsync();
+        }
+
+        [Route("GetCustomersComplete")]
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Customer>>> GetCustomersComplete()
+        {
+            if (_context.Customers == null)
+            {
+                return NotFound();
+            }
+
+            return await _context.Customers
+                .Include(c => c.CustomerAddresses)
+                .ThenInclude(a => a.Address)
+                .Include(c => c.SalesOrderHeaders)
+                .ThenInclude(s => s.SalesOrderDetails)
+                .ThenInclude(p => p.Product)
+                .ToListAsync();
+        }
+
+        [Route("GetCustomersCompleteById/{id}")]
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Customer>>> GetCustomersCompleteById(int id)
+        {
+            if (_context.Customers == null)
+            {
+                return NotFound();
+            }
+
+            return await _context.Customers
+                .Include(c => c.CustomerAddresses)
+                .ThenInclude(a => a.Address)
+                .Include(c => c.SalesOrderHeaders)
+                .ThenInclude(s => s.SalesOrderDetails)
+                .ThenInclude(p => p.Product)
+                .Where(c => c.CustomerId == id)
+                .ToListAsync();
         }
 
         // GET: api/Customers/5
@@ -50,54 +89,33 @@ namespace Betacomio.Controllers
             return customer;
         }
 
-        // PUT: api/Customers/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+
         [HttpPut("{id}")]
         public async Task<IActionResult> PutCustomer(int id, Customer customer)
         {
             if (id != customer.CustomerId)
             {
-                return BadRequest();
+                return BadRequest("Invalid customer ID.");
             }
 
             try
             {
-
-                foreach(Customer c in _context.Customers)
-                {
-                    if(c.CustomerId == id)
-                    {
-                        
-                        c.FirstName = customer.FirstName;
-                        c.LastName = customer.LastName;
-                        c.NameStyle = customer.NameStyle;
-                        c.ModifiedDate = DateTime.Now;
-                       
-                    }
-                }
-
-            }
-            catch(Exception ex)
-            {
-                return Problem("Errore nell'aggiornamento dati");
-            }
-
-            _context.Entry(customer).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!CustomerExists(id))
+                var existingCustomer = await _context.Customers.FindAsync(id);
+                if (existingCustomer == null)
                 {
                     return NotFound();
                 }
-                else
-                {
-                    throw;
-                }
+
+                existingCustomer.FirstName = customer.FirstName;
+                existingCustomer.LastName = customer.LastName;
+                existingCustomer.NameStyle = customer.NameStyle;
+                existingCustomer.ModifiedDate = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                return Problem("Errore nell'aggiornamento dati.", statusCode: 500);
             }
 
             return NoContent();
