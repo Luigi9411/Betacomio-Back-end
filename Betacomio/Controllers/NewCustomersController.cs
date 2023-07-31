@@ -18,6 +18,9 @@ namespace Betacomio.Controllers
     [ApiController]
     public class NewCustomersController : ControllerBase
     {
+
+        //Istanzio 2 context: Sia quello del DB con i dati AdventureWorks, che quello del DB degli username
+        //Inoltre istanzio la classe per il log errori
         private readonly AdventureLoginContext _context;
         private readonly AdventureWorksLt2019Context _context2;
 
@@ -28,6 +31,7 @@ namespace Betacomio.Controllers
             _context = context;
             _context2 = context2;
 
+            //Ottengo le stringhe di connessione dall'appSettings
             var errorDB = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ConnectionStrings")["ErrorDB"];
             var logPath = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ConnectionStrings")["LogPath"];
 
@@ -44,17 +48,6 @@ namespace Betacomio.Controllers
               return NotFound();
           }
 
-            try
-            {
-                int x = 1;
-                int y = x / 0;
-
-            }
-            catch (Exception ex)
-            {
-                errManager.SaveException("dbo.Errors", ex, "NewCustomersController", "getNewCustomer", DateTime.Now, "ProvaLofFile");
-            }
-
             return await _context.NewCustomers.ToListAsync();
         }
 
@@ -62,18 +55,22 @@ namespace Betacomio.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<NewCustomer>> GetNewCustomer(int id)
         {
-          if (_context.NewCustomers == null)
-          {
-              return NotFound();
-          }
-            var newCustomer = await _context.NewCustomers.FindAsync(id);
 
-            if (newCustomer == null)
-            {
-                return NotFound();
-            }
+          
+                if (_context.NewCustomers == null)
+                {
+                    return NotFound();
+                }
+                var newCustomer = await _context.NewCustomers.FindAsync(id);
+
+                if (newCustomer == null)
+                {
+                    return NotFound();
+                }
+            
 
             return newCustomer;
+
         }
 
         // PUT: api/NewCustomers/5
@@ -145,7 +142,7 @@ namespace Betacomio.Controllers
             }
 
             //Qui si cerca nella tabella customer vecchia se l'email è già in uso
-            //il risultato lo metto nel booleano newCus
+            //il risultato lo metto nel booleano newMail e newPass
             Customer retrievedData = new();
             bool newMail = true;
             bool newPass = true;
@@ -237,9 +234,6 @@ namespace Betacomio.Controllers
                 errManager.SaveException("dbo.Errors", ex, "NewCustomersController", "PostNewCustomer", DateTime.Now, "problema nell'aggiornamento dati");
 
             }
-
-           
-            
 
 
             return CreatedAtAction("GetNewCustomer", new { id = newCustomer.CustomerId }, newCustomer);

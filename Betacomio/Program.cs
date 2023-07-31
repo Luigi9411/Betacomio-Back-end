@@ -33,6 +33,19 @@ namespace Betacomio
             builder.Services.AddAuthorization(opt =>
                 opt.AddPolicy("BasicAuthentication", new AuthorizationPolicyBuilder("BasicAuthentication").RequireAuthenticatedUser().Build()));
 
+            builder.Services.AddCors(opt =>
+            {
+                opt.AddDefaultPolicy(
+                    build =>
+                    {
+                        //build.WithOrigins("")
+                        build.SetIsOriginAllowed(origin => true)
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                    });
+            });
+
 
             var app = builder.Build();
 

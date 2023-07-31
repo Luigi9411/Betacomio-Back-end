@@ -27,6 +27,7 @@ namespace Betacomio.Authentication
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
+            //Controllo che l'autenticazione c'è nell'header
             Response.Headers.Add("WWW-Authenticate", "Basic");
 
             if (!Request.Headers.ContainsKey("Authorization"))
@@ -36,6 +37,8 @@ namespace Betacomio.Authentication
 
             var authorizationHeader = Request.Headers["Authorization"].ToString();
 
+            //Stabilisco la regex per controllare che l'autenticazione basica sia valida
+
             var authoHeaderRegEx = new Regex("Basic (.*)");
 
             if (!authoHeaderRegEx.IsMatch(authorizationHeader))
@@ -43,26 +46,27 @@ namespace Betacomio.Authentication
                 return Task.FromResult(AuthenticateResult.Fail("Authorization Code, not properly formatted"));
             }
 
+            //Decodifico username e password e li metto in un array
+
             var authBase64 = Encoding.UTF8.GetString(Convert.FromBase64String(authoHeaderRegEx.Replace(authorizationHeader, "$1")));
             var authSplit = authBase64.Split(Convert.ToChar(":"), 2);
 
             var authUser = authSplit[0];
             var authPassword = authSplit.Length > 1 ? authSplit[1] : throw new Exception("Unable to get Password");
 
-            // IL CONTROLLO NON VA, NATURLAMENTE, FATTO HARDCODED, SICURAMENTE SUBENTRA UN CONTROLLO
-            // SUGLI USER NEL DB? NEL FILE? IL TUTTO PREVIO ENCRYPT/DECRYPT
-            // if (checkCredentias(authuser,authpassword)
+            //Apro la connessione al DB per confrontare Username e Password arrivati dal Front-end con quelli che si trovano nel DB
 
             bool userOk = false;
             var cnnLogin = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ConnectionStrings")["LoginDb"];
             DBConnector db = new(cnnLogin.ToString());
-            
-            db.ConnectToDB();
 
+            db.ConnectToDB();
 
             SqlCommand cmd = db.SqlCnn.CreateCommand();
             cmd.CommandText = "SELECT * From dbo.NewCustomer";
             cmd.CommandType = System.Data.CommandType.Text;
+
+            //Qui faccio il confronto tra Email e password con il DB
             
             using(SqlDataReader reader = cmd.ExecuteReader())
             {
@@ -78,6 +82,8 @@ namespace Betacomio.Authentication
             }
 
             db.SqlCnn.Close();
+
+            //Se non esistono EMAIL o Password nel DB allora interrompo se invece esistono confermo l'autenticazione
 
             if (!userOk)
             {

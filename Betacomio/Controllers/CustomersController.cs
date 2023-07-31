@@ -21,6 +21,7 @@ namespace Betacomio.Controllers
 
         ErrorManager errManager;
 
+        //Istanzio il context + la classe per effettuare il log degli errori
         public CustomersController(AdventureWorksLt2019Context context)
         {
             _context = context;
@@ -45,6 +46,7 @@ namespace Betacomio.Controllers
             return await _context.Customers.ToListAsync();
         }
 
+        //Questo metodo ritorna il customer con tutte le tabelle figlie per avere i dati completi
         [Route("GetCustomersComplete")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Customer>>> GetCustomersComplete()
@@ -63,6 +65,7 @@ namespace Betacomio.Controllers
                 .ToListAsync();
         }
 
+        //Trova il customer per id con tutte le tabelle figlie
         [Route("GetCustomersCompleteById/{id}")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Customer>>> GetCustomersCompleteById(int id)
@@ -82,6 +85,7 @@ namespace Betacomio.Controllers
                 .ToListAsync();
         }
 
+        //Trova il customer semplicemente per id
         // GET: api/Customers/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Customer>> GetCustomer(int id)
@@ -100,7 +104,7 @@ namespace Betacomio.Controllers
             return customer;
         }
 
-
+        //Aggiorna un nuovo Customer tramite ID
         [HttpPut("{id}")]
         public async Task<IActionResult> PutCustomer(int id, Customer customer)
         {
@@ -133,7 +137,7 @@ namespace Betacomio.Controllers
 
             return NoContent();
         }
-
+        //Aggiunge un Customer nuovo
         // POST: api/Customers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
@@ -157,6 +161,7 @@ namespace Betacomio.Controllers
             return CreatedAtAction("GetCustomer", new { id = customer.CustomerId }, customer);
         }
 
+        //Elimina Customer (Da aggiungere l'eliminazione a cascata)
         // DELETE: api/Customers/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCustomer(int id)
