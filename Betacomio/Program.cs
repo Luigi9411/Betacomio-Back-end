@@ -1,7 +1,9 @@
 
 
+using Betacomio.Authentication;
 using Betacomio.Models;
-
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
@@ -23,6 +25,15 @@ namespace Betacomio
             builder.Services.AddDbContext<AdventureWorksLt2019Context>(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("MainDB")));
             builder.Services.AddDbContext<AdventureLoginContext>(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("LoginDB")));
             builder.Services.AddControllers().AddJsonOptions(jsOpt => jsOpt.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
+
+
+            builder.Services.AddAuthentication()
+               .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", opt => { });
+
+            builder.Services.AddAuthorization(opt =>
+                opt.AddPolicy("BasicAuthentication", new AuthorizationPolicyBuilder("BasicAuthentication").RequireAuthenticatedUser().Build()));
+
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.

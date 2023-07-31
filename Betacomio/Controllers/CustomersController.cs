@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Betacomio.Models;
 using DBConnectionLibrary;
+using ErrorLogLibrary.BusinessLogic;
+using Microsoft.Extensions.Configuration;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Betacomio.Controllers
 {
@@ -16,9 +19,17 @@ namespace Betacomio.Controllers
     {
         private readonly AdventureWorksLt2019Context _context;
 
+        ErrorManager errManager;
+
         public CustomersController(AdventureWorksLt2019Context context)
         {
             _context = context;
+
+            var errorDB = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ConnectionStrings")["ErrorDB"];
+            var logPath = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ConnectionStrings")["LogPath"];
+
+            errManager = new(errorDB.ToString(), logPath.ToString());
+           
         }
 
         // GET: api/Customers
@@ -115,7 +126,9 @@ namespace Betacomio.Controllers
             }
             catch (Exception ex)
             {
+                errManager.SaveException("dbo.Errors", ex, "CustomersController", "PutCustomer", DateTime.Now, "");
                 return Problem("Errore nell'aggiornamento dati.", statusCode: 500);
+            
             }
 
             return NoContent();
@@ -130,8 +143,16 @@ namespace Betacomio.Controllers
           {
               return Problem("Entity set 'AdventureWorksLt2019Context.Customers'  is null.");
           }
-            _context.Customers.Add(customer);
-            await _context.SaveChangesAsync();
+            try
+            {
+                _context.Customers.Add(customer);
+                await _context.SaveChangesAsync();
+
+            } catch(Exception ex)
+            {
+                errManager.SaveException("dbo.Errors", ex, "CustomersController", "PostCustomer", DateTime.Now, "");
+            }
+            
 
             return CreatedAtAction("GetCustomer", new { id = customer.CustomerId }, customer);
         }
@@ -150,8 +171,17 @@ namespace Betacomio.Controllers
                 return NotFound();
             }
 
-            _context.Customers.Remove(customer);
-            await _context.SaveChangesAsync();
+            try
+            {
+                _context.Customers.Remove(customer);
+                await _context.SaveChangesAsync();
+
+            } catch(Exception ex)
+            {
+                errManager.SaveException("dbo.Errors", ex, "CustomersController", "DeleteCustomer", DateTime.Now, "");
+
+            }
+            
 
             return NoContent();
         }

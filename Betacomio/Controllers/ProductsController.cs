@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Betacomio.Models;
+using ErrorLogLibrary.BusinessLogic;
+using System.Configuration;
+using ConfigurationManager = System.Configuration.ConfigurationManager;
 
 namespace Betacomio.Controllers
 {
@@ -15,9 +18,16 @@ namespace Betacomio.Controllers
     {
         private readonly AdventureWorksLt2019Context _context;
 
+        ErrorManager errManager;
+
         public ProductsController(AdventureWorksLt2019Context context)
         {
             _context = context;
+
+            var errorDB = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ConnectionStrings")["ErrorDB"];
+            var logPath = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ConnectionStrings")["LogPath"];
+
+            errManager = new(errorDB.ToString(), logPath.ToString());
         }
 
         // GET: api/Products
@@ -64,16 +74,26 @@ namespace Betacomio.Controllers
 
             //products = _context.Products.Where(_context => _context.Name == name).ToList();
 
-            var products = await _context.Products
-               .Where(e => e.Name.ToUpper().Contains(name.ToUpper()))
-               .ToListAsync();
-
-            if (products == null)
+            try
             {
-                return NotFound();
+                var products = await _context.Products
+              .Where(e => e.Name.ToUpper().Contains(name.ToUpper()))
+              .ToListAsync();
+
+                if (products == null)
+                {
+                    return NotFound();
+                }
+
+                return products;
+
+            } catch(Exception ex)
+            {
+                errManager.SaveException("dbo.Errors", ex, "ProductsController", "GetProductByName", DateTime.Now, "");
             }
 
-            return products;
+            return NotFound();
+            
         }
 
         // PUT: api/Products/5
@@ -92,15 +112,17 @@ namespace Betacomio.Controllers
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException ex)
             {
                 if (!ProductExists(id))
                 {
+                    errManager.SaveException("dbo.Errors", ex, "ProductsController", "GetProductByName", DateTime.Now, "Not found");
                     return NotFound();
                 }
                 else
                 {
-                    throw;
+
+                    errManager.SaveException("dbo.Errors", ex, "ProductsController", "GetProductByName", DateTime.Now, "");
                 }
             }
 
@@ -116,8 +138,17 @@ namespace Betacomio.Controllers
           {
               return Problem("Entity set 'AdventureWorksLt2019Context.Products'  is null.");
           }
-            _context.Products.Add(product);
-            await _context.SaveChangesAsync();
+
+            try
+            {
+                _context.Products.Add(product);
+                await _context.SaveChangesAsync();
+
+            } catch(Exception ex)
+            {
+                errManager.SaveException("dbo.Errors", ex, "ProductsController", "PostProduct", DateTime.Now, "");
+            }
+            
 
             return CreatedAtAction("GetProduct", new { id = product.ProductId }, product);
         }
@@ -136,8 +167,16 @@ namespace Betacomio.Controllers
                 return NotFound();
             }
 
-            _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
+            try
+            {
+                _context.Products.Remove(product);
+                await _context.SaveChangesAsync();
+
+            } catch(Exception ex)
+            {
+                errManager.SaveException("dbo.Errors", ex, "ProductsController", "PostProduct", DateTime.Now, "");
+            }
+            
 
             return NoContent();
         }

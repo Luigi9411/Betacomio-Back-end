@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Betacomio.Models;
+using ErrorLogLibrary.BusinessLogic;
+using System.Configuration;
+using ConfigurationManager = System.Configuration.ConfigurationManager;
 
 namespace Betacomio.Controllers
 {
@@ -15,9 +18,16 @@ namespace Betacomio.Controllers
     {
         private readonly AdventureWorksLt2019Context _context;
 
+        private ErrorManager errManager;
+
         public SalesOrderDetailsController(AdventureWorksLt2019Context context)
         {
             _context = context;
+
+            var errorDB = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ConnectionStrings")["ErrorDB"];
+            var logPath = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ConnectionStrings")["LogPath"];
+
+            errManager = new(errorDB.ToString(), logPath.ToString());
         }
 
         // GET: api/SalesOrderDetails
@@ -46,6 +56,8 @@ namespace Betacomio.Controllers
                 return NotFound();
             }
 
+
+
             return salesOrderDetail;
         }
 
@@ -65,15 +77,16 @@ namespace Betacomio.Controllers
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException ex)
             {
                 if (!SalesOrderDetailExists(id))
                 {
+                    errManager.SaveException("dbo.Errors", ex, "SalesOrderDetailController", "PutSalesOrderDetail", DateTime.Now, "");
                     return NotFound();
                 }
                 else
                 {
-                    throw;
+                    errManager.SaveException("dbo.Errors", ex, "SalesOrderDetailController", "PutSalesOrderDetail", DateTime.Now, "");
                 }
             }
 
@@ -94,15 +107,16 @@ namespace Betacomio.Controllers
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
                 if (SalesOrderDetailExists(salesOrderDetail.SalesOrderId))
                 {
+                    errManager.SaveException("dbo.Errors", ex, "SalesOrderDetailController", "PostSalesOrderDetail", DateTime.Now, "");
                     return Conflict();
                 }
                 else
                 {
-                    throw;
+                    errManager.SaveException("dbo.Errors", ex, "SalesOrderDetailController", "PostSalesOrderDetail", DateTime.Now, "");
                 }
             }
 
@@ -123,8 +137,17 @@ namespace Betacomio.Controllers
                 return NotFound();
             }
 
-            _context.SalesOrderDetails.Remove(salesOrderDetail);
-            await _context.SaveChangesAsync();
+            try
+            {
+                _context.SalesOrderDetails.Remove(salesOrderDetail);
+                await _context.SaveChangesAsync();
+
+            } 
+            catch(Exception ex)
+            {
+                errManager.SaveException("dbo.Errors", ex, "SalesOrderDetailController", "DeleteSalesOrderDetail", DateTime.Now, "");
+            }
+           
 
             return NoContent();
         }

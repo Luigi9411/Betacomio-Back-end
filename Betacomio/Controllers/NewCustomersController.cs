@@ -7,6 +7,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Betacomio.Models;
 using DBConnectionLibrary;
+using ErrorLogLibrary.BusinessLogic;
+using System.Configuration;
+using ConfigurationManager = System.Configuration.ConfigurationManager;
+using Betacomio.Authentication;
 
 namespace Betacomio.Controllers
 {
@@ -17,10 +21,18 @@ namespace Betacomio.Controllers
         private readonly AdventureLoginContext _context;
         private readonly AdventureWorksLt2019Context _context2;
 
+        ErrorManager errManager;
+
         public NewCustomersController(AdventureLoginContext context, AdventureWorksLt2019Context context2)
         {
             _context = context;
             _context2 = context2;
+
+            var errorDB = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ConnectionStrings")["ErrorDB"];
+            var logPath = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ConnectionStrings")["LogPath"];
+
+
+            errManager = new(errorDB.ToString(), logPath.ToString());
         }
 
         // GET: api/NewCustomers
@@ -31,6 +43,18 @@ namespace Betacomio.Controllers
           {
               return NotFound();
           }
+
+            try
+            {
+                int x = 1;
+                int y = x / 0;
+
+            }
+            catch (Exception ex)
+            {
+                errManager.SaveException("dbo.Errors", ex, "NewCustomersController", "getNewCustomer", DateTime.Now, "ProvaLofFile");
+            }
+
             return await _context.NewCustomers.ToListAsync();
         }
 
@@ -68,15 +92,16 @@ namespace Betacomio.Controllers
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException ex)
             {
                 if (!NewCustomerExists(id))
                 {
+                    errManager.SaveException("dbo.Errors", ex, "NewCustomersController", "PutNewCustomer", DateTime.Now, "");
                     return NotFound();
                 }
                 else
                 {
-                    throw;
+                    errManager.SaveException("dbo.Errors", ex, "NewCustomersController", "PutNewCustomer", DateTime.Now, "");
                 }
             }
 
@@ -115,6 +140,7 @@ namespace Betacomio.Controllers
             }
             catch (Exception ex)
             {
+                errManager.SaveException("dbo.Errors", ex, "NewCustomersController", "PostNewCustomer", DateTime.Now, "");
                 return Problem("Problema con l'encriptazione della password");
             }
 
@@ -151,6 +177,7 @@ namespace Betacomio.Controllers
                     }
                     catch(Exception ex)
                     {
+                        errManager.SaveException("dbo.Errors", ex, "NewCustomersController", "PostNewCustomer", DateTime.Now, "");
                         return Problem("Encriptazione password non riuscita");
                     }
 
@@ -164,42 +191,54 @@ namespace Betacomio.Controllers
 
             retrievedData.CustomerId = 0;
 
-            if (newMail)
+            try
             {
 
-                Guid guid = Guid.NewGuid();
-
-                retrievedData.EmailAddress = newCustomer.EmailAddress;
-                retrievedData.FirstName = "";
-                retrievedData.LastName = "";
-                retrievedData.NameStyle = false;
-                retrievedData.PasswordHash = "";
-                retrievedData.PasswordSalt = "";
-                retrievedData.ModifiedDate = DateTime.Now;
-                retrievedData.Rowguid = guid;
-
-                _context2.Customers.Add(retrievedData);
-                _context.NewCustomers.Add(newCustomer);
-
-                _context2.SaveChanges();
-
-            }
-            else
-            {
-                if (!newPass)
+                if (newMail)
                 {
-                    
+
+                    Guid guid = Guid.NewGuid();
+
+                    retrievedData.EmailAddress = newCustomer.EmailAddress;
+                    retrievedData.FirstName = "";
+                    retrievedData.LastName = "";
+                    retrievedData.NameStyle = false;
+                    retrievedData.PasswordHash = "";
+                    retrievedData.PasswordSalt = "";
+                    retrievedData.ModifiedDate = DateTime.Now;
+                    retrievedData.Rowguid = guid;
+
+                    _context2.Customers.Add(retrievedData);
                     _context.NewCustomers.Add(newCustomer);
+
+                    _context2.SaveChanges();
+
                 }
                 else
                 {
-                    return Problem("Email e password non corrispondono");
+                    if (!newPass)
+                    {
+
+                        _context.NewCustomers.Add(newCustomer);
+                    }
+                    else
+                    {
+                        return Problem("Email e password non corrispondono");
+                    }
+
                 }
-               
+
+
+                await _context.SaveChangesAsync();
+
             }
-            
-            
-            await _context.SaveChangesAsync();
+            catch(Exception ex)
+            {
+                errManager.SaveException("dbo.Errors", ex, "NewCustomersController", "PostNewCustomer", DateTime.Now, "problema nell'aggiornamento dati");
+
+            }
+
+           
             
 
 
@@ -221,8 +260,16 @@ namespace Betacomio.Controllers
                 return NotFound();
             }
 
-            _context.NewCustomers.Remove(newCustomer);
-            await _context.SaveChangesAsync();
+            try
+            {
+                _context.NewCustomers.Remove(newCustomer);
+                await _context.SaveChangesAsync();
+
+            } catch(Exception ex)
+            {
+                errManager.SaveException("dbo.Errors", ex, "NewCustomersController", "DeleteNewCustomer", DateTime.Now, "problema nell'eliminazione");
+            }
+            
 
             return NoContent();
         }

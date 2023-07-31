@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Betacomio.Models;
+using ErrorLogLibrary.BusinessLogic;
+using System.Configuration;
+using ConfigurationManager = System.Configuration.ConfigurationManager;
 
 namespace Betacomio.Controllers
 {
@@ -15,9 +18,16 @@ namespace Betacomio.Controllers
     {
         private readonly AdventureWorksLt2019Context _context;
 
+        private ErrorManager errManager;
+
         public SalesOrderHeadersController(AdventureWorksLt2019Context context)
         {
             _context = context;
+
+            var errorDB = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ConnectionStrings")["ErrorDB"];
+            var logPath = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ConnectionStrings")["LogPath"];
+
+            errManager = new(errorDB.ToString(), logPath.ToString());
         }
 
         // GET: api/SalesOrderHeaders
@@ -65,15 +75,16 @@ namespace Betacomio.Controllers
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException ex)
             {
                 if (!SalesOrderHeaderExists(id))
                 {
+                    errManager.SaveException("dbo.Errors", ex, "SalesOrderheaderController", "PutSalesHeader", DateTime.Now, "");
                     return NotFound();
                 }
                 else
                 {
-                    throw;
+                    errManager.SaveException("dbo.Errors", ex, "SalesOrderheaderController", "PutSalesHeader", DateTime.Now, "");
                 }
             }
 
@@ -89,8 +100,16 @@ namespace Betacomio.Controllers
           {
               return Problem("Entity set 'AdventureWorksLt2019Context.SalesOrderHeaders'  is null.");
           }
-            _context.SalesOrderHeaders.Add(salesOrderHeader);
-            await _context.SaveChangesAsync();
+            try
+            {
+                _context.SalesOrderHeaders.Add(salesOrderHeader);
+                await _context.SaveChangesAsync();
+            }
+            catch(Exception ex)
+            {
+                errManager.SaveException("dbo.Errors", ex, "SalesOrderheaderController", "PostSalesHeader", DateTime.Now, "");
+            }
+           
 
             return CreatedAtAction("GetSalesOrderHeader", new { id = salesOrderHeader.SalesOrderId }, salesOrderHeader);
         }
@@ -109,8 +128,17 @@ namespace Betacomio.Controllers
                 return NotFound();
             }
 
-            _context.SalesOrderHeaders.Remove(salesOrderHeader);
-            await _context.SaveChangesAsync();
+            try
+            {
+                _context.SalesOrderHeaders.Remove(salesOrderHeader);
+                await _context.SaveChangesAsync();
+
+            } catch(Exception ex)
+            {
+                errManager.SaveException("dbo.Errors", ex, "SalesOrderheaderController", "DeleteSalesHeader", DateTime.Now, "");
+            }
+
+           
 
             return NoContent();
         }
