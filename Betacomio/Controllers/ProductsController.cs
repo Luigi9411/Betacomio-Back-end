@@ -46,16 +46,35 @@ namespace Betacomio.Controllers
         [HttpGet]
         public async Task<ActionResult<Product>> GetProductbyId(int id)
         {
-          if (_context.Products == null)
-          {
-              return NotFound();
-          }
-            var product = await _context.Products.FindAsync(id);
 
-            if (product == null)
+            Product product = new();
+
+            try
             {
-                return NotFound();
+                if (_context.Products == null)
+                {
+                    return NotFound();
+                }
+                product = await _context.Products
+                    .Include(p => p.ProductCategory)
+                    .Include(p => p.ProductModel)
+                    .ThenInclude(m => m.ProductModelProductDescriptions)
+                    .ThenInclude(d => d.ProductDescription)
+                    .Where(i => i.ProductId == id)
+                    .FirstAsync();
+
+                if (product == null)
+                {
+                    return NotFound();
+                }
+
+            } catch(Exception ex)
+            {
+                errManager.SaveException("dbo.Errors", ex, "ProductsController", "GetProductById", DateTime.Now, "");
+                return BadRequest();
+
             }
+         
 
             return product;
         }
@@ -64,36 +83,79 @@ namespace Betacomio.Controllers
         [HttpGet("{name}")]
         public async Task<ActionResult<List<Product>>> GetProductbyName(string name)
         {
-            if (_context.Products == null)
-            {
-                return NotFound();
-            }
+
             //var product = await _context.Products.FindAsync(name);
 
             //List<Product> products = new List<Product>();
 
             //products = _context.Products.Where(_context => _context.Name == name).ToList();
 
+            List<Product> products = new List<Product>();
+
             try
             {
-                var products = await _context.Products
-              .Where(e => e.Name.ToUpper().Contains(name.ToUpper()))
-              .ToListAsync();
+                if (_context.Products == null)
+                {
+                    return NotFound();
+                }
+
+                products = await _context.Products
+                    .Include(p => p.ProductCategory)
+                    .Include(p => p.ProductModel)
+                    .ThenInclude(m => m.ProductModelProductDescriptions)
+                    .ThenInclude(d => d.ProductDescription)
+                    .Where(e => e.Name.ToUpper().Contains(name.ToUpper()))
+                    .ToListAsync();
 
                 if (products == null)
                 {
                     return NotFound();
                 }
 
-                return products;
+                
 
             } catch(Exception ex)
             {
                 errManager.SaveException("dbo.Errors", ex, "ProductsController", "GetProductByName", DateTime.Now, "");
+                return Conflict("Errore nel recupero prodotti");
             }
 
-            return NotFound();
-            
+            return products;
+
+        }
+        [Route("GetProductsByCategory/{category}")]
+        [HttpGet("{category}")]
+        public async Task<ActionResult<IEnumerable<Product>>> GetProductsByCategory(string category)
+        {
+            List<Product> products = new List<Product>();
+
+            try
+            {
+                if (_context.Products == null)
+                {
+                    return NotFound();
+                }
+
+                products = await _context.Products
+                    .Include(p => p.ProductCategory)
+                    .Include(p => p.ProductModel)
+                    .ThenInclude(m => m.ProductModelProductDescriptions)
+                    .ThenInclude(d => d.ProductDescription)
+                    .Where(p => p.ProductCategory.Name.ToUpper().Contains(category.ToUpper())).ToListAsync();
+
+                if (products == null)
+                {
+                    return NotFound();
+                }
+
+            } catch(Exception ex)
+            {
+                errManager.SaveException("dbo.Errors", ex, "ProductsController", "GetProductBycategory", DateTime.Now, "");
+                return Conflict("Errore nel recupero prodotti");
+            }
+
+           
+            return products;
         }
 
         // PUT: api/Products/5

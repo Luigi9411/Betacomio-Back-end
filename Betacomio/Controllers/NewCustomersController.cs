@@ -11,6 +11,8 @@ using ErrorLogLibrary.BusinessLogic;
 using System.Configuration;
 using ConfigurationManager = System.Configuration.ConfigurationManager;
 using Betacomio.Authentication;
+using System.Text.RegularExpressions;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Betacomio.Controllers
 {
@@ -115,12 +117,24 @@ namespace Betacomio.Controllers
                 return Problem("Entity set 'AdventureLoginContext.NewCustomers'  is null.");
             }
 
+            if(newCustomer.EmailAddress.IsNullOrEmpty() || newCustomer.PasswordHash.IsNullOrEmpty())
+            {
+                return Conflict("Password o Email vuote");
+            }
+
+
+            Regex pattern = new Regex("[a-z0-9]+@[a-z]+\\.[a-z]{2,3}");
+
+            if (!pattern.IsMatch(newCustomer.EmailAddress))
+            {
+                return Conflict("Email non corretta");
+            }
+
             //Qui si cerca tra i customer nuovi se l'indirizzo email è già in uso
             if (_context.NewCustomers.Any(cl => cl.EmailAddress == newCustomer.EmailAddress))
             {
                 return Conflict("Un utente con lo stesso nome utente esiste già.");
             }
-
 
             string passHashNew;
             string passSaltNew;

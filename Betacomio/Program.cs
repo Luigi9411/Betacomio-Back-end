@@ -58,6 +58,8 @@ namespace Betacomio
 
             app.UseHttpsRedirection();
 
+            app.UseCors();
+
             app.UseAuthorization();
 
 
