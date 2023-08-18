@@ -38,7 +38,12 @@ namespace Betacomio.Controllers
           {
               return NotFound();
           }
-            return await _context.Products.ToListAsync();
+            return await _context.Products
+                .Include(p => p.ProductCategory)
+                .Include(p => p.ProductModel)
+                .ThenInclude(m => m.ProductModelProductDescriptions)
+                .ThenInclude(d => d.ProductDescription)
+                .ToListAsync();
         }
 
         // GET: api/Products/5
