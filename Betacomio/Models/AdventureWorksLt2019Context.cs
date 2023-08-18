@@ -43,6 +43,8 @@ public partial class AdventureWorksLt2019Context : DbContext
 
     public virtual DbSet<VProductAndDescription> VProductAndDescriptions { get; set; }
 
+    public virtual DbSet<VProductDescriptionPrice> VProductDescriptionPrices { get; set; }
+
     public virtual DbSet<VProductModelCatalogDescription> VProductModelCatalogDescriptions { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -600,6 +602,24 @@ public partial class AdventureWorksLt2019Context : DbContext
             entity.Property(e => e.Name).HasMaxLength(50);
             entity.Property(e => e.ProductId).HasColumnName("ProductID");
             entity.Property(e => e.ProductModel).HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<VProductDescriptionPrice>(entity =>
+        {
+            entity.HasKey(e => e.ProductId);
+
+            entity.ToView("vProductDescriptionPrice");
+
+            entity.Property(e => e.CategoryName).HasMaxLength(50);
+            entity.Property(e => e.Color).HasMaxLength(15);
+            entity.Property(e => e.Culture)
+                .HasMaxLength(6)
+                .IsFixedLength();
+            entity.Property(e => e.Description).HasMaxLength(400);
+            entity.Property(e => e.ListPrice).HasColumnType("money");
+            entity.Property(e => e.Name).HasMaxLength(50);
+            entity.Property(e => e.ProductId).HasColumnName("ProductID");
+            entity.Property(e => e.ThumbnailPhotoFileName).HasMaxLength(50);
         });
 
         modelBuilder.Entity<VProductModelCatalogDescription>(entity =>
