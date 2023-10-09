@@ -114,7 +114,7 @@ namespace Betacomio.Controllers
         {
             if (_context.NewCustomers == null)
             {
-                return Problem("Entity set 'AdventureLoginContext.NewCustomers'  is null.");
+                return BadRequest("Entity set 'AdventureLoginContext.NewCustomers'  is null.");
             }
 
             if(newCustomer.EmailAddress.IsNullOrEmpty() || newCustomer.PasswordHash.IsNullOrEmpty())
@@ -133,7 +133,8 @@ namespace Betacomio.Controllers
             //Qui si cerca tra i customer nuovi se l'indirizzo email è già in uso
             if (_context.NewCustomers.Any(cl => cl.EmailAddress == newCustomer.EmailAddress))
             {
-                return Conflict("Un utente con lo stesso nome utente esiste già.");
+                //return Conflict("Un utente con lo stesso nome utente esiste già.");
+                return NoContent();
             }
 
             string passHashNew;
@@ -152,7 +153,7 @@ namespace Betacomio.Controllers
             catch (Exception ex)
             {
                 errManager.SaveException("dbo.Errors", ex, "NewCustomersController", "PostNewCustomer", DateTime.Now, "");
-                return Problem("Problema con l'encriptazione della password");
+                return BadRequest("Problema con l'encriptazione della password");
             }
 
             //Qui si cerca nella tabella customer vecchia se l'email è già in uso
@@ -189,7 +190,7 @@ namespace Betacomio.Controllers
                     catch(Exception ex)
                     {
                         errManager.SaveException("dbo.Errors", ex, "NewCustomersController", "PostNewCustomer", DateTime.Now, "");
-                        return Problem("Encriptazione password non riuscita");
+                        return BadRequest("Encriptazione password non riuscita");
                     }
 
                 }
@@ -234,7 +235,7 @@ namespace Betacomio.Controllers
                     }
                     else
                     {
-                        return Problem("Email e password non corrispondono");
+                        return NoContent();
                     }
 
                 }
@@ -250,7 +251,8 @@ namespace Betacomio.Controllers
             }
 
 
-            return CreatedAtAction("GetNewCustomer", new { id = newCustomer.CustomerId }, newCustomer);
+            // return CreatedAtAction("GetNewCustomer", new { id = newCustomer.CustomerId }, newCustomer);
+            return Ok();
         }
 
 

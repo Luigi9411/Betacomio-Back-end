@@ -38,6 +38,7 @@ public partial class AdventureLoginContext : DbContext
             entity.Property(e => e.PasswordSalt)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.Role).HasMaxLength(50);
         });
 
         OnModelCreatingPartial(modelBuilder);

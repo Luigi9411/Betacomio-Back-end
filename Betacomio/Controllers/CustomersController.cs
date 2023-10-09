@@ -10,6 +10,8 @@ using DBConnectionLibrary;
 using ErrorLogLibrary.BusinessLogic;
 using Microsoft.Extensions.Configuration;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.AspNetCore.Authorization;
+using System.Data;
 
 namespace Betacomio.Controllers
 {
@@ -33,7 +35,7 @@ namespace Betacomio.Controllers
            
         }
 
-        // GET: api/Customers
+        // GET: api/Customers/GetCustomers
         [Route("GetCustomers")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Customer>>> GetCustomers()
@@ -85,6 +87,30 @@ namespace Betacomio.Controllers
                 .ToListAsync();
         }
 
+        //Trova Customer per Email
+        
+        //api/Customers/GetCustomerByEmail
+        [Route("GetCustomerByEmail/{Email}")]
+        [HttpGet]
+        public async Task<ActionResult<Customer>> GetCustomerByEmail(string Email)
+        {
+
+
+            if (_context.Customers == null)
+            {
+                return NotFound();
+            }
+            var Customer = await _context.Customers.FirstOrDefaultAsync(c => c.EmailAddress.Equals(Email));
+
+            if (Customer == null)
+            {
+                return NotFound();
+            }
+
+
+            return Customer;
+
+        }
         //Trova il customer semplicemente per id
         // GET: api/Customers/5
         [HttpGet("{id}")]
@@ -137,6 +163,45 @@ namespace Betacomio.Controllers
 
             return NoContent();
         }
+        //api/Customers/PutCustomerByEmail
+        [Route("PutCustomerByEmail/{Email}")]
+        [HttpPut]
+        public async Task<IActionResult> PutCustomerByEmail(string Email, Customer customer)
+        {
+            //if (Email != customer.EmailAddress)
+            //{
+            //    return BadRequest("Invalid customer Email.");
+            //}
+
+            try
+            {
+                var existingCustomer = await _context.Customers.FirstOrDefaultAsync(c => c.EmailAddress.Equals(Email));
+                if (existingCustomer == null)
+                {
+                    return NotFound();
+                }
+
+                existingCustomer.FirstName = customer.FirstName;
+                existingCustomer.LastName = customer.LastName;
+                existingCustomer.NameStyle = customer.NameStyle;
+                existingCustomer.ModifiedDate = DateTime.Now;
+                existingCustomer.PasswordHash = "";
+                existingCustomer.PasswordSalt = "";
+                existingCustomer.Phone = customer.Phone;
+
+
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                errManager.SaveException("dbo.Errors", ex, "CustomersController", "PutCustomer", DateTime.Now, "");
+                return Problem("Errore nell'aggiornamento dati.", statusCode: 500);
+
+            }
+
+            return NoContent();
+        }
         //Aggiunge un Customer nuovo
         // POST: api/Customers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
@@ -164,6 +229,7 @@ namespace Betacomio.Controllers
         //Elimina Customer (Da aggiungere l'eliminazione a cascata)
         // DELETE: api/Customers/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteCustomer(int id)
         {
             if (_context.Customers == null)

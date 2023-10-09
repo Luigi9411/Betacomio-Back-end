@@ -49,6 +49,32 @@ namespace Betacomio.Controllers
             return vProductDescriptionPrice;
         }
 
+        //Get nome e categoria
+        //api/VProductDescriptionPrices/GetProductsByCategoryAndName
+
+        [Route("GetProductsByCategoryAndName/{searchValue}")]
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<VProductDescriptionPrice>>> GetVProductsByCategoryAndName(string searchvalue)
+        {
+
+            if (_context.VProductDescriptionPrices == null)
+            {
+                return NotFound();
+            }
+            var products = await _context.VProductDescriptionPrices
+                .Where(p => p.Name.ToUpper().Contains(searchvalue.ToUpper()) || p.CategoryName.ToUpper().Contains(searchvalue.ToUpper()))
+                .ToListAsync();
+
+            if (products == null)
+            {
+                return NotFound();
+            }
+
+            return products;
+        }
+
+
+
         // PUT: api/VProductDescriptionPrices/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]

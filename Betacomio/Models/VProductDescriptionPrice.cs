@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 
 namespace Betacomio.Models;
 
 public partial class VProductDescriptionPrice
 {
-    [Key]
     public int ProductId { get; set; }
 
     public string Name { get; set; } = null!;

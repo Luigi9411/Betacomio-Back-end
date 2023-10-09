@@ -120,9 +120,45 @@ public partial class SalesOrderHeader
 
     public virtual Address? BillToAddress { get; set; }
 
-    public virtual Customer Customer { get; set; } = null!;
+    public virtual Customer Customer { get; set; } = new Customer("init");
 
     public virtual ICollection<SalesOrderDetail> SalesOrderDetails { get; set; } = new List<SalesOrderDetail>();
 
     public virtual Address? ShipToAddress { get; set; }
+
+
+    public SalesOrderHeader() { }
+    public SalesOrderHeader(string init)
+    {
+
+        if (init.Equals("init"))
+        {
+            SalesOrderId = 0;
+            RevisionNumber = 2;
+            OrderDate = DateTime.Now;
+            DueDate = DateTime.Now;
+            ShipDate = DateTime.Now;
+            Status = 0;
+            OnlineOrderFlag = false;
+            SalesOrderNumber = "";
+            PurchaseOrderNumber = "";
+            AccountNumber = "";
+            CustomerId = 0;
+            ShipToAddressId = 9;
+            BillToAddressId = 9;
+            ShipMethod = "";
+            CreditCardApprovalCode = "";
+            SubTotal = 0;
+            TaxAmt = 0;
+            Freight = 0;
+            TotalDue = 0;
+            Comment = "";
+            Rowguid = Guid.NewGuid();
+            ModifiedDate = DateTime.Now;
+            BillToAddress = null;
+            ShipToAddress = null;
+
+        }
+       
+    }
 }

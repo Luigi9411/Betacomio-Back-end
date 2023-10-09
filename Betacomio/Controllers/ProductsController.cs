@@ -9,6 +9,7 @@ using Betacomio.Models;
 using ErrorLogLibrary.BusinessLogic;
 using System.Configuration;
 using ConfigurationManager = System.Configuration.ConfigurationManager;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Betacomio.Controllers
 {
@@ -30,8 +31,10 @@ namespace Betacomio.Controllers
             errManager = new(errorDB.ToString(), logPath.ToString());
         }
 
-        // GET: api/Products
+        // GET: api/Products/GetProducts
+       
         [HttpGet]
+        //[Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
         {
           if (_context.Products == null)
@@ -39,14 +42,14 @@ namespace Betacomio.Controllers
               return NotFound();
           }
             return await _context.Products
-                .Include(p => p.ProductCategory)
-                .Include(p => p.ProductModel)
-                .ThenInclude(m => m.ProductModelProductDescriptions)
-                .ThenInclude(d => d.ProductDescription)
+                //.Include(p => p.ProductCategory)
+                //.Include(p => p.ProductModel)
+                //.ThenInclude(m => m.ProductModelProductDescriptions)
+                //.ThenInclude(d => d.ProductDescription)
                 .ToListAsync();
         }
 
-        // GET: api/Products/5
+        // GET: api/Products/GetProductById/5
         [Route("GetProductById/{id}")]
         [HttpGet]
         public async Task<ActionResult<Product>> GetProductbyId(int id)

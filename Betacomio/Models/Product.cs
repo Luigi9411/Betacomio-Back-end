@@ -98,4 +98,37 @@ public partial class Product
     public virtual ProductModel? ProductModel { get; set; }
 
     public virtual ICollection<SalesOrderDetail> SalesOrderDetails { get; set; } = new List<SalesOrderDetail>();
+
+    public Product() { }
+
+    public Product(string init)
+    {
+        if (init.Equals("init"))
+        {
+
+            string guidString = Guid.NewGuid().ToString();
+            string limitedString = guidString.Substring(0, Math.Min(guidString.Length, 25));
+
+            ProductId = 0;
+            Name = Guid.NewGuid().ToString();
+            ProductNumber = limitedString;
+            Color = "Black";
+            StandardCost = 0;
+            ListPrice = 0;
+            Size = "";
+            Weight = 1;
+            ProductCategoryId = 18;
+            ProductModelId = 6;
+            SellStartDate = DateTime.Now;
+        SellEndDate = null;
+            DiscontinuedDate = null;
+            ThumbNailPhoto = null;
+            ThumbnailPhotoFileName = "no_image_available_small.gif";
+            Rowguid = Guid.NewGuid();
+            ModifiedDate = DateTime.Now;
+            ProductCategory = null;
+            ProductModel = null;
+        }
+
+    }
 }

@@ -9,6 +9,8 @@ using Betacomio.Models;
 using ErrorLogLibrary.BusinessLogic;
 using System.Configuration;
 using ConfigurationManager = System.Configuration.ConfigurationManager;
+using Microsoft.AspNetCore.Authorization;
+using System.Data;
 
 namespace Betacomio.Controllers
 {
@@ -94,6 +96,7 @@ namespace Betacomio.Controllers
         // POST: api/SalesOrderHeaders
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
+        [Authorize(Roles = "User,Admin")]
         public async Task<ActionResult<SalesOrderHeader>> PostSalesOrderHeader(SalesOrderHeader salesOrderHeader)
         {
           if (_context.SalesOrderHeaders == null)
@@ -108,9 +111,10 @@ namespace Betacomio.Controllers
             catch(Exception ex)
             {
                 errManager.SaveException("dbo.Errors", ex, "SalesOrderheaderController", "PostSalesHeader", DateTime.Now, "");
+                return BadRequest();
             }
-           
 
+            return salesOrderHeader;
             return CreatedAtAction("GetSalesOrderHeader", new { id = salesOrderHeader.SalesOrderId }, salesOrderHeader);
         }
 

@@ -25,14 +25,14 @@ namespace Betacomio.Authentication
             ) : base(options, logger, encoder, clock)
         { }
 
-        protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+        protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             //Controllo che l'autenticazione c'è nell'header
             Response.Headers.Add("WWW-Authenticate", "Basic");
 
             if (!Request.Headers.ContainsKey("Authorization"))
             {
-                return Task.FromResult(AuthenticateResult.Fail("Autorizzazione mancante"));
+                return AuthenticateResult.Fail("Autorizzazione mancante");
             }
 
             var authorizationHeader = Request.Headers["Authorization"].ToString();
@@ -43,20 +43,21 @@ namespace Betacomio.Authentication
 
             if (!authoHeaderRegEx.IsMatch(authorizationHeader))
             {
-                return Task.FromResult(AuthenticateResult.Fail("Authorization Code, not properly formatted"));
+                return AuthenticateResult.Fail("Authorization Code, not properly formatted");
             }
 
             //Decodifico username e password e li metto in un array
+            
+                var authBase64 = Encoding.UTF8.GetString(Convert.FromBase64String(authoHeaderRegEx.Replace(authorizationHeader, "$1")));
+                var authSplit = authBase64.Split(Convert.ToChar(":"), 2);
 
-            var authBase64 = Encoding.UTF8.GetString(Convert.FromBase64String(authoHeaderRegEx.Replace(authorizationHeader, "$1")));
-            var authSplit = authBase64.Split(Convert.ToChar(":"), 2);
-
-            var authUser = authSplit[0];
-            var authPassword = authSplit.Length > 1 ? authSplit[1] : throw new Exception("Unable to get Password");
+                var authUser = authSplit[0];
+                var authPassword = authSplit.Length > 1 ? authSplit[1] : throw new Exception("Unable to get Password");
 
             //Apro la connessione al DB per confrontare Username e Password arrivati dal Front-end con quelli che si trovano nel DB
 
             bool userOk = false;
+            string userRole = null;
             var cnnLogin = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ConnectionStrings")["LoginDb"];
             DBConnector db = new(cnnLogin.ToString());
 
@@ -67,19 +68,36 @@ namespace Betacomio.Authentication
             cmd.CommandType = System.Data.CommandType.Text;
 
             //Qui faccio il confronto tra Email e password con il DB
-            
-            using(SqlDataReader reader = cmd.ExecuteReader())
+
+            using (SqlDataReader reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
                 {
 
-                    bool check = encryption.checkPassword(authPassword, reader["PasswordHash"].ToString(), reader["PasswordSalt"].ToString());
-                    if (reader["EmailAddress"].ToString() == authUser && check == true) 
+                    try
                     {
-                        userOk = true;
+
+                        bool check = encryption.checkPassword(authPassword, reader["PasswordHash"].ToString(), reader["PasswordSalt"].ToString());
+                        if (reader["EmailAddress"].ToString() == authUser && check == true)
+                        {
+                            userOk = true;
+                            userRole = reader["Role"].ToString(); // Assumendo che il ruolo sia memorizzato nella colonna "Role"
+                            break;
+                        }
+
                     }
+                    catch(Exception ex)
+                    {
+
+                       
+
+                    }
+
+                   
                 }
             }
+
+
 
             db.SqlCnn.Close();
 
@@ -87,15 +105,19 @@ namespace Betacomio.Authentication
 
             if (!userOk)
             {
-                return Task.FromResult(AuthenticateResult.Fail("User e/o password errati !!!"));
+                return AuthenticateResult.Fail("User e/o password errati !!!");
             }
 
-            var authenticatedUser = new AuthenticatedUser("BasicAuthentication", true, "claudio");
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, authUser),
+                new Claim(ClaimTypes.Role, userRole)
+            };
 
-            var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(authenticatedUser));
+            var claimsIdentity = new ClaimsIdentity(claims, Scheme.Name);
+            var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
 
-            return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(claimsPrincipal, Scheme.Name)));
-
+            return AuthenticateResult.Success(new AuthenticationTicket(claimsPrincipal, Scheme.Name));
         }
     }
 }

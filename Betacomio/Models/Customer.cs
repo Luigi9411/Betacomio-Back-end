@@ -86,4 +86,21 @@ public partial class Customer
     public virtual ICollection<CustomerAddress> CustomerAddresses { get; set; } = new List<CustomerAddress>();
 
     public virtual ICollection<SalesOrderHeader> SalesOrderHeaders { get; set; } = new List<SalesOrderHeader>();
+
+    public Customer() { }
+
+    public Customer(string init)
+    {
+        if (init.Equals("init"))
+        {
+            CustomerId = 0;
+            NameStyle = false;
+            FirstName = "";
+            LastName = "";
+            PasswordHash = "";
+            PasswordSalt = "";
+            Rowguid = Guid.NewGuid();
+            ModifiedDate = DateTime.Now;
+        }
+    }
 }

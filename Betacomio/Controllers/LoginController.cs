@@ -2,6 +2,7 @@
 using DBConnectionLibrary;
 using ErrorLogLibrary.BusinessLogic;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 
 namespace Betacomio.Controllers
 {
@@ -25,6 +26,8 @@ namespace Betacomio.Controllers
 
             errManager = new(errorDB.ToString(), logPath.ToString());
         }
+
+        //api/Login
         [HttpPost]
         public IActionResult Auth(Login login)
         {
@@ -41,16 +44,37 @@ namespace Betacomio.Controllers
                 {
                     if(cus.EmailAddress == login.Username && encryption.checkPassword(login.Password, cus.PasswordHash, cus.PasswordSalt))
                     {
-                        return Ok();
+
+                        if(cus.Role == "Admin")
+                        {
+                            return NoContent();
+                        }
+                        else
+                        {
+                            return Ok();
+
+                        }
+                    
                     }
                 }
 
-                foreach(Customer cus in _context2.Customers)
+                
+                foreach(Customer? cus in _context2.Customers)
                 {
-                    if(cus.EmailAddress == login.Username && encryption.checkPassword(login.Password, cus.PasswordHash, cus.PasswordSalt))
+                    if(cus == null)
                     {
-                        return Problem("Utente esiste già nel DB Vecchio");
+                        continue;
                     }
+
+                    if(cus.EmailAddress == null)
+                    {
+                        continue;
+                    }
+                    
+                    if (cus.EmailAddress.Equals(login.Username) && encryption.checkPassword(login.Password, cus.PasswordHash, cus.PasswordSalt))
+                    {
+                        return NotFound();
+                    }  
                 }
 
               
@@ -62,7 +86,7 @@ namespace Betacomio.Controllers
                 return BadRequest(string.Empty);
             }
 
-            return Forbid();
+            return BadRequest("Username o password not matching");
         }
     }
 

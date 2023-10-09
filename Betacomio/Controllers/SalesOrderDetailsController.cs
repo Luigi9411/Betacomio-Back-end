@@ -9,6 +9,8 @@ using Betacomio.Models;
 using ErrorLogLibrary.BusinessLogic;
 using System.Configuration;
 using ConfigurationManager = System.Configuration.ConfigurationManager;
+using Microsoft.AspNetCore.Authorization;
+using System.Data;
 
 namespace Betacomio.Controllers
 {
@@ -96,6 +98,7 @@ namespace Betacomio.Controllers
         // POST: api/SalesOrderDetails
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
+        [Authorize(Roles = "User,Admin")]
         public async Task<ActionResult<SalesOrderDetail>> PostSalesOrderDetail(SalesOrderDetail salesOrderDetail)
         {
           if (_context.SalesOrderDetails == null)
@@ -112,11 +115,12 @@ namespace Betacomio.Controllers
                 if (SalesOrderDetailExists(salesOrderDetail.SalesOrderId))
                 {
                     errManager.SaveException("dbo.Errors", ex, "SalesOrderDetailController", "PostSalesOrderDetail", DateTime.Now, "");
-                    return Conflict();
+                    return BadRequest();
                 }
                 else
                 {
                     errManager.SaveException("dbo.Errors", ex, "SalesOrderDetailController", "PostSalesOrderDetail", DateTime.Now, "");
+                    return BadRequest();
                 }
             }
 

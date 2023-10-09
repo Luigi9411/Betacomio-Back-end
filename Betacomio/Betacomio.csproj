@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
@@ -24,8 +24,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Librerie\DBConnectionLibrary\DBConnectionLibrary.csproj" />
-    <ProjectReference Include="..\..\..\Librerie\ErrorLogLibrary\ErrorLogLibrary\ErrorLogLibrary.csproj" />
+    <ProjectReference Include="..\..\Librerie\DBConnectionLibrary\DBConnectionLibrary.csproj" />
+    <ProjectReference Include="..\..\Librerie\ErrorLogLibrary\ErrorLogLibrary\ErrorLogLibrary.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="DBConnectionLibrary">
+      <HintPath>..\..\Librerie\DBConnectionLibrary\bin\Debug\net7.0\DBConnectionLibrary.dll</HintPath>
+    </Reference>
+    <Reference Include="ErrorLogLibrary">
+      <HintPath>..\..\Librerie\ErrorLogLibrary\ErrorLogLibrary\bin\Debug\net7.0\ErrorLogLibrary.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

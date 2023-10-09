@@ -41,6 +41,8 @@ public partial class AdventureWorksLt2019Context : DbContext
 
     public virtual DbSet<VGetAllCategory> VGetAllCategories { get; set; }
 
+    public virtual DbSet<VOrderHistory> VOrderHistories { get; set; }
+
     public virtual DbSet<VProductAndDescription> VProductAndDescriptions { get; set; }
 
     public virtual DbSet<VProductDescriptionPrice> VProductDescriptionPrices { get; set; }
@@ -153,11 +155,11 @@ public partial class AdventureWorksLt2019Context : DbContext
                 .HasColumnType("datetime");
             entity.Property(e => e.NameStyle).HasComment("0 = The data in FirstName and LastName are stored in western style (first name, last name) order.  1 = Eastern style (last name, first name) order.");
             entity.Property(e => e.PasswordHash)
-                .HasMaxLength(128)
+                .HasMaxLength(150)
                 .IsUnicode(false)
                 .HasComment("Password for the e-mail account.");
             entity.Property(e => e.PasswordSalt)
-                .HasMaxLength(10)
+                .HasMaxLength(128)
                 .IsUnicode(false)
                 .HasComment("Random value concatenated with the password string before the password is hashed.");
             entity.Property(e => e.Phone)
@@ -587,6 +589,20 @@ public partial class AdventureWorksLt2019Context : DbContext
             entity.Property(e => e.ParentProductCategoryName).HasMaxLength(50);
             entity.Property(e => e.ProductCategoryId).HasColumnName("ProductCategoryID");
             entity.Property(e => e.ProductCategoryName).HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<VOrderHistory>(entity =>
+        {
+            entity.HasKey(e => e.SalesOrderId);
+
+            entity.ToView("vOrderHistory");
+
+            entity.Property(e => e.CustomerId).HasColumnName("CustomerID");
+            entity.Property(e => e.OrderDate).HasColumnType("datetime");
+            entity.Property(e => e.ProductId).HasColumnName("ProductID");
+            entity.Property(e => e.SalesOrderId).HasColumnName("SalesOrderID");
+            entity.Property(e => e.SubTotal).HasColumnType("money");
+            entity.Property(e => e.UnitPrice).HasColumnType("money");
         });
 
         modelBuilder.Entity<VProductAndDescription>(entity =>
